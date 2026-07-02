@@ -1,14 +1,14 @@
 # Smoke Test Findings — 2026-06-18
 
 Lessons from running the Axon Audit pipeline end-to-end on a synthetic
-TestApp workspace (`/root/axon-audits/testapp-20260618-151915/`). Future
+TestApp workspace (`~/.axon-audits/testapp-20260618-151915/`). Future
 runs of `compile-report.py` should not have to rediscover these.
 
 ---
 
 ## Environment
 
-- **kimi-pdf path:** `/root/.agents/skills/kimi-pdf/scripts/html_to_pdf.js`
+- **kimi-pdf path:** `~/.agents/skills/kimi-pdf/scripts/html_to_pdf.js`
   (NOT `/app/.kimi/...` — the kimi-pdf skill lives under `.agents/`).
   The full PDF toolchain is in that directory (`pdf.sh`, `html_to_pdf.js`,
   `paged.polyfill.js`). Run `pdf.sh check` to verify node + playwright +
@@ -113,19 +113,19 @@ on that workspace. Full smoke-test sequence:
 
 ```bash
 # Init
-python3 ~/.hermes/skills/devops/axon-audit/scripts/lib.py init \
+python3 ~/.agents/skills/axon-audit/scripts/lib.py init \
     --name "TestApp" --type "rn-expo" --stage "live" \
     --url "https://testapp.example.com"
 
 # Populate
-cp ~/.hermes/skills/devops/axon-audit/scripts/smoke_fixture.py \
-    /root/axon-audits/<workspace>/_populate.py
+cp ~/.agents/skills/axon-audit/scripts/smoke_fixture.py \
+    ~/.axon-audits/<workspace>/_populate.py
 # Edit WORKSPACE in _populate.py
-python3 /root/axon-audits/<workspace>/_populate.py
+python3 ~/.axon-audits/<workspace>/_populate.py
 
 # Compile
-python3 ~/.hermes/skills/devops/axon-audit/scripts/compile-report.py \
-    /root/axon-audits/<workspace>
+python3 ~/.agents/skills/axon-audit/scripts/compile-report.py \
+    ~/.axon-audits/<workspace>
 ```
 
 Expected: 33-page PDF, ~270 KB, 30 findings, 23 agent appendix entries.

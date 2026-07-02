@@ -1,27 +1,23 @@
-# Axon Audit — Hermes Agent Skill
+# Axon Audit — OpenCode Skill
 
-A **23-agent, 5-wave multi-agent app audit pipeline** for [Hermes Agent](https://hermes-agent.nousresearch.com). Analyzes codebases (web / React Native / Expo / n8n) across security, auth, scaling, code quality, cost, and compliance — produces a live fact-checked PDF report with cost-to-fix estimates.
+A **23-agent, 5-wave multi-agent app audit pipeline** for OpenCode. Analyzes codebases (web / React Native / Expo / n8n) across security, auth, scaling, code quality, cost, and compliance — produces a live fact-checked PDF report with cost-to-fix estimates.
 
 ## Quick Install
 
 ```bash
-hermes skills tap add laxmanisawesome/axon-audit-skill
-hermes skills install axon-audit
+git clone https://github.com/laxmanisawesome/axon-audit-skill.git ~/.agents/skills/axon-audit
 ```
 
-Or install directly:
+Or install directly from the raw `SKILL.md`:
 
 ```bash
-hermes skills install https://raw.githubusercontent.com/laxmanisawesome/axon-audit-skill/main/SKILL.md
+curl -fsSL https://raw.githubusercontent.com/laxmanisawesome/axon-audit-skill/master/SKILL.md \
+  -o ~/.agents/skills/axon-audit/SKILL.md
 ```
 
 ## Usage
 
-Load the skill in any Hermes session:
-
-```
-/skill axon-audit
-```
+Once installed in `~/.agents/skills/axon-audit/`, OpenCode will load the skill automatically based on the trigger phrases in `SKILL.md`.
 
 Then trigger with something like:
 
@@ -51,10 +47,10 @@ A PDF report containing:
 
 ## Requirements
 
-- Hermes Agent (v1.0+)
-- Python 3.10+
-- `delegate_task` tool enabled
-- `kimi-pdf` skill (for PDF compilation)
+- OpenCode agent runtime
+- Python 3.9+
+- `task` tool enabled (for subagent orchestration)
+- `kimi-pdf` skill installed at `~/.agents/skills/kimi-pdf/` (for PDF compilation)
 
 ## License
 

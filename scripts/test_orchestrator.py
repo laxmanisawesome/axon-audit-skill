@@ -198,7 +198,7 @@ def check(name: str, condition: bool, detail: str = "") -> None:
 
 
 def main() -> int:
-    # Use a temp workspace root so we don't litter /root/axon-audits during test
+    # Use a temp workspace root so we don't litter ~/.axon-audits during test
     tmp_root = Path(tempfile.mkdtemp(prefix="axon-test-"))
     print(f"\n🧪 Axon Audit orchestrator test  |  temp root: {tmp_root}\n")
 

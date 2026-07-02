@@ -1,8 +1,8 @@
 # Axon Audit — Orchestrator Procedure
 
-> This document is the **operational manual** for the main Hermes agent when running an Axon Audit.
+> This document is the **operational manual** for the main OpenCode agent when running an Axon Audit.
 > Read this top-to-bottom at the start of an audit run. Follow the steps in order.
-> The actual `delegate_task` calls are made by **you** (the main agent) — this file just tells you how.
+> The actual `task` calls are made by **you** (the main agent) — this file just tells you how.
 
 ---
 
@@ -15,9 +15,9 @@ Final PDF ← Compiler ← Wave 5 (6 agents) ← Wave 4 (4 agents)
 ```
 
 - **Waves run sequentially.** Each wave reads the prior wave's `context.json` (and writes its own).
-- **Agents within a wave run in parallel** (subject to the 3-task-per-batch limit).
+- **Agents within a wave run in parallel** (up to 3 per batch).
 - **All outputs are files on disk.** Subagents read from and write to a workspace directory.
-- **delegate_task cap = 3 tasks per call.** With 23 agents, expect **9 batches**:
+- **Parallel cap = 3 `task` calls per response.** With 23 agents, expect **9 batches**:
   | Wave | Agents | Batches |
   |------|--------|---------|
   | 1 | 4 | 2 (3+1) |
@@ -45,7 +45,7 @@ If the user gave you a brief, parse it. If they gave you answers in chat, build 
 
 Run:
 ```bash
-python3 ~/.hermes/skills/devops/axon-audit/scripts/lib.py init \
+python3 ~/.agents/skills/axon-audit/scripts/lib.py init \
   --name "MyApp" --type "rn-expo" --stage "live" \
   --url "https://myapp.com" --repo "https://github.com/x/y" \
   --concern "security" --concern "scaling" \
@@ -54,10 +54,10 @@ python3 ~/.hermes/skills/devops/axon-audit/scripts/lib.py init \
 
 Or with a brief file:
 ```bash
-python3 ~/.hermes/skills/devops/axon-audit/scripts/lib.py init --brief /path/to/brief.md
+python3 ~/.agents/skills/axon-audit/scripts/lib.py init --brief /path/to/brief.md
 ```
 
-**Output:** a workspace path like `/root/axon-audits/myapp-20260618-143012/`. Note this. All subsequent steps use it.
+**Output:** a workspace path like `~/.axon-audits/myapp-20260618-143012/`. Note this. All subsequent steps use it.
 
 The workspace is created with this layout:
 ```
@@ -79,11 +79,11 @@ The workspace is created with this layout:
 
 Before the first wave, load the relevant checklist into your context:
 
-- **If `app_type == "rn-expo"`** → `skill_view("axon-audit")` already loaded; then read `references/rn-firebase-checklist.md`
+- **If `app_type == "rn-expo"`** → read `references/rn-firebase-checklist.md`
 - **If `app_type == "web"`** → read `references/web-checklist.md`
 - **If `app_type == "n8n"`** → read `references/web-checklist.md` (it covers general API patterns)
 
-These are passed to subagents via the `context` field on `delegate_task`.
+These are passed to subagents in the prompt text.
 
 ---
 
@@ -92,15 +92,15 @@ These are passed to subagents via the `context` field on `delegate_task`.
 Before launching a wave, build its `context.json`:
 
 ```python
-import sys; sys.path.insert(0, "/root/.hermes/skills/devops/axon-audit/scripts")
+import sys; sys.path.insert(0, "~/.agents/skills/axon-audit/scripts")
 from lib import AuditWorkspace
-ws = AuditWorkspace.from_path("/root/axon-audits/<slug>")
+ws = AuditWorkspace.from_path("~/.axon-audits/<slug>")
 ws.build_context(wave_num=N)
 ```
 
 Or via CLI (Wave 1 doesn't need this — its context IS the brief):
 ```bash
-python3 -c "import sys; sys.path.insert(0,'/root/.hermes/skills/devops/axon-audit/scripts'); from lib import AuditWorkspace; AuditWorkspace.from_path('$WS').build_context(2)"
+python3 -c "import sys; sys.path.insert(0,'~/.agents/skills/axon-audit/scripts'); from lib import AuditWorkspace; AuditWorkspace.from_path('$WS').build_context(2)"
 ```
 
 The context aggregates:
@@ -113,9 +113,9 @@ This is the **single file** you pass to subagents as their input.
 
 ---
 
-## 5. Step 4: Launch Wave Agents (delegate_task)
+## 5. Step 4: Launch Wave Agents (`task` tool)
 
-For each wave, you build a `tasks` array of 1-3 agents and call `delegate_task`.
+For each wave, build a batch of 1-3 agents and call the `task` tool for each.
 
 ### Prompt template per agent
 
@@ -126,52 +126,51 @@ DEPLOYED URL: <brief.url>
 REPO: <brief.repo>
 
 CONTEXT FILES (read these first):
-- /root/axon-audits/<slug>/waves/<NN>-<slug>/context.json
-- ~/.hermes/skills/devops/axon-audit/templates/agent-prompts/<prompt-file>
-- ~/.hermes/skills/devops/axon-audit/references/<relevant-checklist>.md (if applicable)
+- ~/.axon-audits/<slug>/waves/<NN>-<slug>/context.json
+- ~/.agents/skills/axon-audit/templates/agent-prompts/<prompt-file>
+- ~/.agents/skills/axon-audit/references/<relevant-checklist>.md (if applicable)
 
 TASK (from agent prompt):
 <copy/paste the ## Task section from the agent's prompt file>
 
 OUTPUT REQUIREMENT:
-- Write your full output to: /root/axon-audits/<slug>/waves/<NN>-<slug>/<agent-file>
+- Write your full output to: ~/.axon-audits/<slug>/waves/<NN>-<slug>/<agent-file>
 - Use the EXACT output format from the prompt template (JSON for cartographer/librarian; markdown for the rest)
 - The file path and format are mandatory — the next wave reads it.
 
 Return a 1-paragraph summary of what you found. The orchestrator reads only the file, not your return value.
 ```
 
-### Toolsets per agent
+### Recommended subagent type
 
-| Wave | Agent | Toolsets |
-|------|-------|----------|
-| 1 | cartographer, librarian, timekeeper, tour-guide | `["file", "terminal", "search"]` |
-| 2 | bouncer, locksmith, exploit-hunter, compliance | `["file", "terminal", "search"]` |
-| 2 | stress-tester, cost-auditor | `["file", "terminal", "search"]` |
-| 3 | janitor, archivist, doctor | `["file", "terminal", "search"]` |
-| 4 | translator, economist, storyteller, skeptic | `["file", "terminal"]` |
-| 5 | documentarian, news-hound, benchmarker, deprecation-hunter | `["file", "terminal", "web"]` |
-| 5 | contrarian, editor-in-chief | `["file", "terminal", "web"]` |
+| Wave | Agent | Subagent type |
+|------|-------|---------------|
+| 1 | cartographer, librarian, timekeeper, tour-guide | `general` |
+| 2 | bouncer, locksmith, exploit-hunter, compliance | `general` |
+| 2 | stress-tester, cost-auditor | `general` |
+| 3 | janitor, archivist, doctor | `general` |
+| 4 | translator, economist, storyteller, skeptic | `general` |
+| 5 | documentarian, news-hound, benchmarker, deprecation-hunter | `general` |
+| 5 | contrarian, editor-in-chief | `general` |
+
+All subagents have access to `read`, `bash`, `webfetch`, and other OpenCode tools as needed.
 
 ### Batch pattern
 
-```python
-# Example: Wave 1, batch 1
-delegate_task(
-    tasks=[
-        {"goal": "<cartographer prompt>", "context": "<shared context>", "toolsets": ["file","terminal","search"]},
-        {"goal": "<tour-guide prompt>",   "context": "<shared context>", "toolsets": ["file","terminal","search"]},
-        {"goal": "<librarian prompt>",    "context": "<shared context>", "toolsets": ["file","terminal","search"]},
-    ]
-)
-# Then batch 2 with timekeeper (only 1 left)
-```
+Launch up to 3 `task` calls in parallel, then wait for all to return before starting the next batch.
 
-**Do NOT exceed 3 tasks per call.** Split if a wave has more.
+Example for Wave 1, batch 1:
+- `task` #1: cartographer prompt
+- `task` #2: tour-guide prompt
+- `task` #3: librarian prompt
+
+Then batch 2 with timekeeper (only 1 left).
+
+**Do NOT exceed 3 tasks per batch.** Split if a wave has more.
 
 ### After each agent returns
 
-The subagent's job is to **write a file**. After `delegate_task` returns, you:
+The subagent's job is to **write a file**. After the `task` call returns, you:
 1. Verify the file exists at the expected path.
 2. Mark it done in the manifest (lib.py handles this if you used `ws.write_agent()`).
 3. If the file is missing or empty → mark failed, log, continue with others.
@@ -186,7 +185,7 @@ The subagent's job is to **write a file**. After `delegate_task` returns, you:
 | 2 | 6 | `build_context(2)` | 3 + 3 | 4 risk agents (bouncer, locksmith, exploit-hunter, compliance) + 2 economics (stress, cost) |
 | 3 | 3 | `build_context(3)` | 3 | Pure code analysis — needs no Wave 4 input |
 | 4 | 4 | `build_context(4)` | 3 + 1 | Needs brief re-injected (founder context) |
-| 5 | 6 | `build_context(5)` | 3 + 3 | All need `web` tools; contrarian + editor-in-chief can be a final pair |
+| 5 | 6 | `build_context(5)` | 3 + 3 | All need web access; contrarian + editor-in-chief can be a final pair |
 
 ---
 
@@ -194,7 +193,7 @@ The subagent's job is to **write a file**. After `delegate_task` returns, you:
 
 ### 7a. Aggregate findings
 ```bash
-python3 ~/.hermes/skills/devops/axon-audit/scripts/lib.py collect /root/axon-audits/<slug>
+python3 ~/.agents/skills/axon-audit/scripts/lib.py collect ~/.axon-audits/<slug>
 ```
 This walks all wave outputs and builds `final/all-findings.json`.
 
@@ -207,7 +206,11 @@ If editor-in-chief did not produce that file, **you (main agent)** must:
 3. Write it to `<workspace>/final/report-source.md`
 
 ### 7c. Hand off to compile-report.py
-Once `report-source.md` exists, hand it to Weekend 3's `compile-report.py` to generate the PDF.
+Once `report-source.md` exists, run `compile-report.py` to generate the PDF.
+
+```bash
+python3 ~/.agents/skills/axon-audit/scripts/compile-report.py ~/.axon-audits/<slug>
+```
 
 ### 7d. Mark final done
 ```bash
@@ -289,5 +292,5 @@ WAVE 5 — LIVE FACT-CHECK
 ## 12. Integration with Other Skills
 
 - **fact-checker** — Wave 5's documentarian/news-hound use the same pattern.
-- **kimi-pdf** — Weekend 3's compile-report.py uses it to generate the PDF.
-- **delegate_task** — Every subagent is a `delegate_task` call (no recursion).
+- **kimi-pdf** — `compile-report.py` uses it to generate the PDF.
+- **`task` tool** — Every subagent is a `task` call (no recursion).

@@ -24,11 +24,11 @@ from typing import Any
 
 # Reuse the report template
 HERE = Path(__file__).resolve().parent
-SKILL = Path("/root/.hermes/skills/devops/axon-audit")
+SKILL = Path.home() / ".agents/skills/axon-audit"
 sys.path.insert(0, str(SKILL / "scripts"))
 from report_template import CSS, _esc, render_toc  # noqa: E402
 
-KIMI_PDF_HTML_TO_PDF = Path("/root/.agents/skills/kimi-pdf/scripts/html_to_pdf.js")
+KIMI_PDF_HTML_TO_PDF = Path.home() / ".agents/skills/kimi-pdf/scripts/html_to_pdf.js"
 
 
 # ---------------------------------------------------------------------------
@@ -346,8 +346,8 @@ def html_to_pdf(html_path: Path, pdf_path: Path) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="compile-guide")
-    p.add_argument("--md", default="/root/axon-audit-operator-guide.md", help="Input markdown path")
-    p.add_argument("--pdf", default="/root/axon-audit-operator-guide.pdf", help="Output PDF path")
+    p.add_argument("--md", default=str(Path.home() / "axon-audit-operator-guide.md"), help="Input markdown path")
+    p.add_argument("--pdf", default=str(Path.home() / "axon-audit-operator-guide.pdf"), help="Output PDF path")
     p.add_argument("--html-only", action="store_true", help="Only render HTML, skip PDF")
     p.add_argument("--keep-html", action="store_true", help="Keep intermediate HTML")
     args = p.parse_args(argv)

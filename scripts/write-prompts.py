@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-import os, sys
+import os
+import sys
+from pathlib import Path
 
-PROMPTS_DIR = "/root/.hermes/skills/devops/axon-audit/templates/agent-prompts"
+PROMPTS_DIR = str(Path.home() / ".agents/skills/axon-audit/templates/agent-prompts")
 os.makedirs(PROMPTS_DIR, exist_ok=True)
 
 prompts = {}
@@ -536,7 +538,7 @@ prompts["18-documentarian.md"] = """# Documentarian — Agent Prompt
 Reference librarian. Verify every technical claim against live docs.
 
 ## Input
-All findings from Waves 1-4. Uses web_search and web_extract.
+All findings from Waves 1-4. Uses the `webfetch` tool to retrieve live docs.
 
 ## Task
 For EVERY API/library/service referenced:

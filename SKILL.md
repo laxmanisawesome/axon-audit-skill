@@ -1,13 +1,12 @@
 ---
 name: axon-audit
-description: "Run a multi-agent app audit across 23 dimensions (security, auth, scaling, code quality, cost, compliance). Produces a PDF report with live fact-checked findings, cost-to-fix estimates, and a founder-friendly executive summary. Trigger: 'audit my app', 'run axon-audit on this repo', 'check my security posture', 'I need an app audit'."
-version: 1.0.0
-author: Lax
-license: MIT
+description: Run a multi-agent app audit across 23 dimensions (security, auth, scaling, code quality, cost, compliance). Produces a PDF report with live fact-checked findings, cost-to-fix estimates, and a founder-friendly executive summary. Trigger: "audit my app", "run axon-audit on this repo", "check my security posture", "I need an app audit".
 metadata:
-  hermes:
-    tags: [devops, audit, security, mobile, web, scaling, fact-check]
-    related_skills: [fact-checker, deep-research, kimi-pdf]
+  version: "1.0.0"
+  author: Lax
+  license: MIT
+  tags: "devops, audit, security, mobile, web, scaling, fact-check"
+  related_skills: "fact-checker, deep-research, kimi-pdf"
 ---
 
 # Axon Audit
@@ -46,20 +45,20 @@ When invoked, follow this sequence:
 1. **Gather brief** — get app name, type (RN/Expo / web / n8n), stage, URL, repo, top concerns. Accept a filled `templates/audit-brief.md` or a quick Q&A.
 2. **Initialize workspace**:
    ```bash
-   python3 ~/.hermes/skills/devops/axon-audit/scripts/lib.py init --name "..." --type "..." ...
+   python3 ~/.agents/skills/axon-audit/scripts/lib.py init --name "..." --type "..." ...
    ```
-   Workspace is created at `/root/axon-audits/<slug>-<timestamp>/`.
+   Workspace is created at `~/.axon-audits/<slug>-<timestamp>/`.
 3. **Run waves** — for each wave (1→5):
-   - Read `scripts/orchestrator.md` for the exact batch pattern (3-task max per `delegate_task` call)
+   - Read `scripts/orchestrator.md` for the exact batch pattern (3-task max per `task` tool call)
    - Before each wave (except Wave 1), run `context --wave N` to assemble `context.json`
-   - Launch agents via `delegate_task` in batches of ≤3
+   - Launch agents via the `task` tool in batches of ≤3
    - Mark each agent done via `mark --wave N --agent <slug> --status done`
    - Mark wave done via `mark-wave --wave N --status done` (refuses if agents not all done)
 4. **Collect & compile**:
    ```bash
    python3 lib.py collect <workspace>          # → final/all-findings.json
    # Wait for editor-in-chief to write final/report-source.md
-   # Then hand to compile-report.py (Weekend 3) for the PDF
+   # Then run compile-report.py for the PDF
    ```
 5. **Report status** to the user with `lib.py status <workspace>`.
 
@@ -83,7 +82,7 @@ INPUT → [Wave 1: 4 agents] → [Wave 2: 6 agents] → [Wave 3: 3 agents]
 OUTPUT ← [Compiler: 1 agent] ← [Wave 5: 6 agents] ← [Wave 4: 4 agents]
 ```
 
-Each agent runs as an isolated `delegate_task` subagent with its own tools. Wave 5 agents use `web_search` and `web_extract` to fact-check every recommendation against live sources.
+Each agent runs as an isolated `task` subagent with its own tools. Wave 5 agents use `webfetch` to fact-check every recommendation against live sources.
 
 ### Output
 
@@ -93,51 +92,6 @@ A PDF report containing:
 - **Cost-to-fix estimates** — in time and money
 - **Live fact-checking** — every claim sourced and dated
 - **Full agent appendix** — raw outputs for transparency
-
-## Agent Cast
-
-### Wave 1: Reconnaissance
-| # | Agent | Role | Output |
-|---|-------|------|--------|
-| 1 | Cartographer | Maps file tree, frameworks, deps | `code_map.json` |
-| 2 | Tour Guide | Walks user flows | `user_journey.md` |
-| 3 | Librarian | Lists all datastores/services/APIs | `inventory.json` |
-| 4 | Timekeeper | Analyzes git/deployment history | `timeline.md` |
-
-### Wave 2: Risk Analysis
-| # | Agent | Role | Output |
-|---|-------|------|--------|
-| 5 | Bouncer | Auth audit | `auth_report.md` |
-| 6 | Locksmith | Secrets/credentials audit | `secrets_report.md` |
-| 7 | Stress Tester | Scaling scenarios 1K-1M users | `scaling_scenarios.md` |
-| 8 | Exploit Hunter | OWASP + mobile exploit scan | `exploit_report.md` |
-| 9 | Cost Auditor | Per-user cost at scale | `cost_report.md` |
-| 10 | Compliance Officer | GDPR/CCPA/PII audit | `compliance_report.md` |
-
-### Wave 3: Code Quality
-| # | Agent | Role | Output |
-|---|-------|------|--------|
-| 11 | Janitor | Dead code/unused imports | `dead_code.md` |
-| 12 | Archivist | Duplicated logic/ownership map | `ownership_map.md` |
-| 13 | Doctor | Critical single-point-of-failure | `critical_risks.md` |
-
-### Wave 4: Founder Translation
-| # | Agent | Role | Output |
-|---|-------|------|--------|
-| 14 | Translator | Technical → business impact | `impact_map.md` |
-| 15 | Economist | Cost-to-fix estimates | `cost_to_fix.md` |
-| 16 | Storyteller | Executive summary | `executive_summary.md` |
-| 17 | Skeptic | Must-have vs nice-to-have | `skeptic_review.md` |
-
-### Wave 5: Live Fact-Check
-| # | Agent | Role | Output |
-|---|-------|------|--------|
-| 18 | Documentarian | Verifies docs/changelogs | `verified_sources.md` |
-| 19 | News Hound | CVEs + advisories (30 days) | `cve_report.md` |
-| 20 | Benchmarker | Verifies performance claims | `benchmarks.md` |
-| 21 | Deprecation Hunter | API deprecation status | `deprecation_report.md` |
-| 22 | Contrarian | Argues against every finding | `contrarian_review.md` |
-| 23 | Editor-in-Chief | Final compilation + PDF | `final_report.md` |
 
 ## Common Pitfalls
 
@@ -153,7 +107,7 @@ Wave 2 and Wave 3 agent outputs **MUST** use `## Severe` / `## Moderate` / `## I
 
 ### kimi-pdf path
 
-The kimi-pdf HTML→PDF converter is at `/root/.agents/skills/kimi-pdf/scripts/html_to_pdf.js` (NOT `/app/.kimi/...`). Run `pdf.sh check` from that directory before relying on it.
+The kimi-pdf HTML→PDF converter is at `~/.agents/skills/kimi-pdf/scripts/html_to_pdf.js`. Run `bash ~/.agents/skills/kimi-pdf/scripts/pdf.sh check` before relying on it.
 
 ## Verification Checklist
 
@@ -167,7 +121,7 @@ The kimi-pdf HTML→PDF converter is at `/root/.agents/skills/kimi-pdf/scripts/h
 
 ## Smoke Test
 
-A synthetic workspace at `/root/axon-audits/testapp-*/` validates the
+A synthetic workspace at `~/.axon-audits/testapp-*/` validates the
 end-to-end pipeline without running real agents. The reusable fixture
 is at `scripts/smoke_fixture.py`.
 
@@ -177,15 +131,15 @@ python3 scripts/lib.py init --name TestApp --type rn-expo --stage live \
     --url https://testapp.example.com
 
 # 2. Populate with synthetic outputs (30 agent files + findings)
-cp scripts/smoke_fixture.py /root/axon-audits/<workspace>/_populate.py
+cp scripts/smoke_fixture.py ~/.axon-audits/<workspace>/_populate.py
 # Edit WORKSPACE in _populate.py to match your new workspace path
-python3 /root/axon-audits/<workspace>/_populate.py
+python3 ~/.axon-audits/<workspace>/_populate.py
 
 # 3. Auto-collect findings from agent markdown
-python3 scripts/lib.py collect /root/axon-audits/<workspace>
+python3 scripts/lib.py collect ~/.axon-audits/<workspace>
 
 # 4. Compile to PDF
-python3 scripts/compile-report.py /root/axon-audits/<workspace>
+python3 scripts/compile-report.py ~/.axon-audits/<workspace>
 ```
 
 Expected output: 33-page PDF (~270 KB) with cover, exec summary
@@ -211,9 +165,9 @@ it before changing the compiler or running on a real codebase.
 | Script | Purpose |
 |--------|---------|
 | `scripts/lib.py` | Workspace lifecycle, I/O helpers, context aggregation, finding collection |
-| `scripts/orchestrator.md` | Step-by-step procedure the main Hermes agent follows (reads `delegate_task` as the orchestrator) |
+| `scripts/orchestrator.md` | Step-by-step procedure the main OpenCode agent follows (uses the `task` tool as the orchestrator) |
 | `scripts/compile-report.py` | Compiles all wave outputs → HTML → PDF report |
-| `scripts/report_template.py` | LaTeX-style HTML/CSS template (kimi-pdf compatible) |
+| `scripts/report_template.py` | Business-report HTML/CSS template (kimi-pdf compatible) — Swiss cover, callout boxes, colored tables, risk badges, priority grid |
 | `scripts/smoke_fixture.py` | Reusable smoke-test fixture — populates a workspace with realistic agent outputs and triggers `lib.py collect`. Copy into a new workspace, edit `WORKSPACE`, run. |
 | `scripts/test_orchestrator.py` | 35 unit tests for `lib.py` (run: `python3 scripts/test_orchestrator.py`) |
 | `scripts/write-prompts.py` | One-off generator for the 23 agent prompt files. (Already used; re-run only if templates change.) |
@@ -234,6 +188,6 @@ it before changing the compiler or running on a real codebase.
 ## Templates
 
 | File | Purpose |
-|------|---------|
+|--------|---------|
 | `templates/audit-brief.md` | Input form — what the user fills in to start an audit |
-| `templates/agent-prompts/*.md` | Per-agent prompt templates for `delegate_task` |
+| `templates/agent-prompts/*.md` | Per-agent prompt templates for the `task` tool |

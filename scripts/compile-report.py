@@ -4,7 +4,7 @@ compile-report.py — Convert an Axon Audit workspace into a final PDF report.
 
 Usage:
     python3 compile-report.py <workspace>
-    python3 compile-report.py /root/axon-audits/myapp-20260618-121928
+    python3 compile-report.py ~/.axon-audits/myapp-20260618-121928
     python3 compile-report.py <workspace> --html-only
     python3 compile-report.py <workspace> --output /path/to/report.pdf
 
@@ -34,7 +34,7 @@ from lib import AuditWorkspace, WAVES, write_json  # noqa: E402
 from report_template import render_html  # noqa: E402
 
 # Path to kimi-pdf's HTML→PDF converter
-KIMI_PDF_HTML_TO_PDF = Path("/root/.agents/skills/kimi-pdf/scripts/html_to_pdf.js")
+KIMI_PDF_HTML_TO_PDF = Path.home() / ".agents/skills/kimi-pdf/scripts/html_to_pdf.js"
 
 
 # ---------------------------------------------------------------------------

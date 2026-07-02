@@ -6,20 +6,20 @@ then run compile-report.py to verify the end-to-end PDF pipeline.
 
 Usage:
     # 1. Init the workspace
-    python3 ~/.hermes/skills/devops/axon-audit/scripts/lib.py init \\
+    python3 ~/.agents/skills/axon-audit/scripts/lib.py init \\
         --name "TestApp" --type "rn-expo" --stage "live" \\
         --url "https://testapp.example.com" \\
         --description "Synthetic smoke-test workspace"
 
     # 2. Copy this script into the new workspace, edit WORKSPACE path, run it
-    cp ~/.hermes/skills/devops/axon-audit/scripts/smoke_fixture.py \\
-        /root/axon-audits/<workspace>/_populate.py
+    cp ~/.agents/skills/axon-audit/scripts/smoke_fixture.py \\
+        ~/.axon-audits/<workspace>/_populate.py
     # Edit the WORKSPACE constant at the top of the copied script
-    python3 /root/axon-audits/<workspace>/_populate.py
+    python3 ~/.axon-audits/<workspace>/_populate.py
 
     # 3. Compile
-    python3 ~/.hermes/skills/devops/axon-audit/scripts/compile-report.py \\
-        /root/axon-audits/<workspace>
+    python3 ~/.agents/skills/axon-audit/scripts/compile-report.py \\
+        ~/.axon-audits/<workspace>
 
 Expected: 30+ page PDF, ~270 KB, 30 findings, 23 agent appendix entries.
 """
@@ -28,8 +28,8 @@ import sys
 from pathlib import Path
 
 # EDIT THIS for each smoke-test run
-WORKSPACE = Path("/root/axon-audits/testapp-20260618-151915")  # noqa: E402
-SCRIPTS = Path("/root/.hermes/skills/devops/axon-audit/scripts")
+WORKSPACE = Path.home() / ".axon-audits/testapp-20260618-151915"  # noqa: E402
+SCRIPTS = Path.home() / ".agents/skills/axon-audit/scripts"
 sys.path.insert(0, str(SCRIPTS))
 import lib  # noqa: E402
 

@@ -4,7 +4,7 @@
 Reference librarian. Verify every technical claim against live docs.
 
 ## Input
-All findings from Waves 1-4. Uses web_search and web_extract.
+All findings from Waves 1-4. Uses the `webfetch` tool to retrieve live docs.
 
 ## Task
 For EVERY API/library/service referenced:

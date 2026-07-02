@@ -15,7 +15,7 @@ Use it when you have a task that decomposes into:
 
 Examples that fit: code audits, content moderation pipelines, marketing-copy review stacks, multi-language translation with quality scoring, vulnerability triage.
 
-Examples that **don't** fit: single-shot questions, anything that fits in one `delegate_task` call, anything needing tight inter-agent feedback loops (use orchestrator subagent instead).
+Examples that **don't** fit: single-shot questions, anything that fits in one `task` call, anything needing tight inter-agent feedback loops (use orchestrator subagent instead).
 
 ---
 
@@ -33,13 +33,13 @@ my-pipeline-skill/
 ├── templates/
 │   ├── input-form.md                 # user fills this in to start
 │   └── agent-prompts/                # one .md per agent, named with number prefix
-└── (runtime workspaces created at /root/<skill>-runs/<slug>-<ts>/)
+└── (runtime workspaces created at ~/.<skill>-runs/<slug>-<ts>/)
 ```
 
 ### Artifact 1: `lib.py` (Python helpers + CLI)
 
 The orchestrator is **driven by the main agent**, not by a Python script calling LLM tools.
-`delegate_task` is an LLM tool — only the main agent loop can call it. So the Python code
+The `task` tool is an LLM tool — only the main agent loop can call it. So the Python code
 just does the file I/O around those calls.
 
 Required CLI subcommands:
@@ -64,9 +64,9 @@ This is the **operational manual** the main agent reads at the start of a run. S
 2. Inputs you need from the user
 3. Workspace init (one-liner)
 4. Which references/checklists to load per app type
-5. **Per-wave prompt template** (the exact `delegate_task` goal string shape)
-6. **Toolsets per agent** (which `toolsets=["file","terminal","web",...]` each agent gets)
-7. **Batch pattern** (3 tasks max per call → table showing batch count per wave)
+5. **Per-wave prompt template** (the exact `task` prompt string shape)
+6. **Subagent type per agent** (usually `general` for analysis agents)
+7. **Batch pattern** (3 tasks max per response → table showing batch count per wave)
 8. Per-wave checklist
 9. Failure handling (what to do when an agent returns no file, partial wave failure, etc.)
 10. Status reporting format for the user
@@ -81,7 +81,7 @@ One file per agent. Use a numeric prefix (`01-`, `02-`, ...) so filesystem listi
 3. **Task** — numbered list of what to do
 4. **Output format** — exact structure (JSON for structured agents, markdown for narrative)
 
-The `## Task` section is what gets pasted verbatim into the `delegate_task` `goal` field.
+The `## Task` section is what gets pasted verbatim into the `task` tool `prompt` field.
 
 ### Artifact 4: `test_*.py` (smoke test)
 
@@ -100,7 +100,7 @@ Goal: 30+ checks, all passing. Anything you ship without a test will break the f
 
 ### 1. The 3-task-per-call cap is real
 
-`delegate_task` is configured for max 3 parallel children for most users. **23 agents at 3-per-call = 9 batches, not 1 big call.** Plan the batch pattern from the start:
+The `task` tool supports up to 3 parallel calls per response for most users. **23 agents at 3-per-response = 9 batches, not 1 big call.** Plan the batch pattern from the start:
 
 | Wave agents | Batches |
 |-------------|---------|
@@ -117,7 +117,7 @@ The orchestrator's contract with each subagent is: **write a file at a known pat
 
 ### 3. Context handoff via files, not via `context` field
 
-The `context` field on `delegate_task` is for **prompt context** (the role, the task, the format). **Data flows through files.** Each wave's `context.json` lives at `<workspace>/waves/<NN>-<slug>/context.json` and contains:
+The `task` tool `prompt` field is for **prompt context** (the role, the task, the format). **Data flows through files.** Each wave's `context.json` lives at `<workspace>/waves/<NN>-<slug>/context.json` and contains:
 - The brief (for waves that need founder context)
 - All prior wave outputs (parsed JSON or raw markdown)
 
@@ -155,10 +155,10 @@ Without the test, these would have shipped as "works on my machine" footguns.
 
 | Don't | Do instead |
 |-------|-----------|
-| Build a Python script that calls LLM tools | Build helpers; let the main agent drive `delegate_task` |
-| Pass prior wave outputs through the `context` field | Pass the **file path**; subagent reads it |
+| Build a Python script that calls LLM tools | Build helpers; let the main agent drive the `task` tool |
+| Pass prior wave outputs through the prompt text | Pass the **file path**; subagent reads it |
 | Trust a subagent's return string | Require a file at a known path; ignore the return |
-| Try to fit 23 agents in one `delegate_task` call | Plan for ~9 batches (3-task cap) |
+| Try to fit 23 agents in one response | Plan for ~9 batches (3-task cap) |
 | Let `mark-wave done` succeed with pending agents | Enforce: refuse unless all agents are done |
 | Build the whole skill before testing | Write the smoke test alongside `lib.py` |
 | Use one global status flag | Per-agent + per-wave, with enforcement between them |
@@ -182,7 +182,7 @@ When you start a new multi-agent pipeline skill, copy this checklist:
 - [ ] Status display with ✅/⏳/❌ glyphs per agent
 - [ ] Finding collector walks waves 2+3, extracts bullets under `## Severe` / `## Moderate` / `## Informational` headers
 - [ ] SKILL.md has a "Quick Start (for the main agent)" section at the top
-- [ ] Per-runtime workspace at `/root/<skill>-runs/<slug>-<ts>/`, never in the skill dir
+- [ ] Per-runtime workspace at `~/.<skill>-runs/<slug>-<ts>/`, never in the skill dir
 - [ ] Test passes 30+/30+ before you ship
 
 ---

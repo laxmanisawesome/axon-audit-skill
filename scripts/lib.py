@@ -4,7 +4,7 @@ Axon Audit — Library Helpers
 =============================
 
 I/O helpers for the Axon Audit orchestrator. The orchestrator is driven
-by a main Hermes agent (which calls `delegate_task`); these helpers do
+by a main OpenCode agent (which calls the `task` tool); these helpers do
 the file scaffolding and context-aggregation that surround those calls.
 
 Public API:
@@ -15,7 +15,7 @@ Public API:
     write_manifest() — update the run-level manifest.json
 
 Workspace layout (created by init_workspace):
-    /root/axon-audits/<slug>-<YYYYMMDD-HHMMSS>/
+    ~/.axon-audits/<slug>-<YYYYMMDD-HHMMSS>/
     ├── brief.json
     ├── manifest.json
     ├── waves/
@@ -53,7 +53,7 @@ from typing import Any
 # Constants
 # ---------------------------------------------------------------------------
 
-WORKSPACE_ROOT = Path("/root/axon-audits")
+WORKSPACE_ROOT = Path.home() / ".axon-audits"
 SKILL_ROOT = Path(__file__).resolve().parent.parent
 PROMPTS_DIR = SKILL_ROOT / "templates" / "agent-prompts"
 REFERENCES_DIR = SKILL_ROOT / "references"
